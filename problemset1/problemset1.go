@@ -83,6 +83,7 @@ func SingleByteXORCipher(hexStr string) (rune, error) {
 }
 
 func scoreEnglish(proposed string) float64 {
+	// TODO: maybe just download a book from gutenberg and manually generate this table
 	// source: https://en.wikipedia.org/wiki/Letter_frequency
 	frequencyTable := map[rune]float64{
 		'a': 0.082,
