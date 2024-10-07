@@ -93,25 +93,28 @@ func TestFixedXOR(t *testing.T) {
 
 func TestSingleByteXORCipher(t *testing.T) {
 	testCases := []struct {
-		input  string
-		output rune
-		err    error
-		name   string
+		input     string
+		outputRun rune
+		outputStr string
+		err       error
+		name      string
 	}{
 		{
-			input: "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
-			// todo: i don't know the answer yet, just using this as a runner
-			output: 'i',
-			err:    nil,
-			name:   "Provided input",
+			input:     "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736",
+			outputRun: 'X',
+			outputStr: "Cooking MC's like a pound of bacon",
+			err:       nil,
+			name:      "Provided input",
 		},
 	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			output, err := problemset1.SingleByteXORCipher(tt.input)
-			if output != tt.output {
-				t.Errorf("Incorrect single byte cipher:\nexpected:\n%s\ngot:\n%s\n", string(tt.output), string(output))
+			outputRun, outputStr, err := problemset1.SingleByteXORCipher(tt.input)
+			if outputRun != tt.outputRun {
+				t.Errorf("Incorrect single byte cipher:\nexpected:\n%s\ngot:\n%s\n", string(tt.outputRun), string(outputRun))
+			} else if outputStr != tt.outputStr {
+				t.Errorf("Incorrect output from single byte cipher:\nexpected:\n%s\ngot:\n%s\n", tt.outputStr, outputStr)
 			} else if tt.err != nil && err != nil && tt.err.Error() != err.Error() {
 				t.Errorf("Incorrect error while calculating cipher:\nexpected:\n%s\ngot:\n%s\n", tt.err.Error(), err.Error())
 			}

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"log"
 	"math"
+	"os"
 	"slices"
-	"strings"
 )
 
 // Set 1 challenge 1
@@ -45,11 +45,11 @@ func FixedXOR(buf1 string, buf2 string) (string, error) {
 	return stringified, nil
 }
 
-// horrible and incorrect, fix it
 // Set 1 challenge 3
-func SingleByteXORCipher(hexStr string) (rune, error) {
+func SingleByteXORCipher(hexStr string) (rune, string, error) {
 	results := make(map[rune]float64)
 	outputStrs := make(map[rune]string)
+	densityTable := getEnglishLetterFrequency()
 
 	var start rune = 0
 	for ; start <= 256; start++ {
@@ -66,7 +66,7 @@ func SingleByteXORCipher(hexStr string) (rune, error) {
 		}
 
 		outputStrs[start] = string(bytes)
-		results[start] = scoreEnglish(string(bytes))
+		results[start] = scoreEnglish(string(bytes), densityTable)
 	}
 
 	currMin := math.MaxFloat64
@@ -78,45 +78,37 @@ func SingleByteXORCipher(hexStr string) (rune, error) {
 		}
 	}
 
-	log.Printf("The best string is '%s'", outputStrs[currBest])
-	return currBest, nil
+	return currBest, outputStrs[currBest], nil
 }
 
-func scoreEnglish(proposed string) float64 {
-	// TODO: maybe just download a book from gutenberg and manually generate this table
-	// source: https://en.wikipedia.org/wiki/Letter_frequency
-	frequencyTable := map[rune]float64{
-		'a': 0.082,
-		'b': 0.015,
-		'c': 0.028,
-		'd': 0.043,
-		'e': 0.127,
-		'f': 0.022,
-		'g': 0.020,
-		'h': 0.061,
-		'i': 0.070,
-		'j': 0.002,
-		'k': 0.008,
-		'l': 0.040,
-		'm': 0.024,
-		'n': 0.067,
-		'o': 0.075,
-		'p': 0.019,
-		'q': 0.001,
-		'r': 0.060,
-		's': 0.063,
-		't': 0.091,
-		'u': 0.028,
-		'v': 0.010,
-		'w': 0.024,
-		'x': 0.002,
-		'y': 0.020,
-		'z': 0.001,
+func getEnglishLetterFrequency() map[rune]float64 {
+	frequencyTable := map[rune]int{}
+
+	inputName := "../throughthelookingglass.txt"
+	data, err := os.ReadFile(inputName)
+	if err != nil {
+		log.Panicln("Coudln't read book")
+	}
+	book := string(data)
+
+	for _, ch := range book {
+		if ch >= 'A' && ch <= 'z' {
+			frequencyTable[ch]++
+		}
 	}
 
+	densityTable := map[rune]float64{}
+	for k, v := range frequencyTable {
+		densityTable[k] = float64(v) / float64(len(book))
+	}
+
+	return densityTable
+}
+
+func scoreEnglish(proposed string, densityTable map[rune]float64) float64 {
 	// get count of characters in string
 	count := make(map[rune]int)
-	normalized := strings.ToLower(proposed)
+	normalized := proposed
 	for _, c := range normalized {
 		count[c] += 1
 	}
@@ -130,7 +122,7 @@ func scoreEnglish(proposed string) float64 {
 
 	diffScore := 0.0
 	// compare density to english lexicon density
-	for k, v := range frequencyTable {
+	for k, v := range densityTable {
 		diffScore += math.Abs(v - density[k])
 	}
 	return diffScore
