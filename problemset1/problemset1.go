@@ -45,11 +45,22 @@ func FixedXOR(buf1 string, buf2 string) (string, error) {
 	return stringified, nil
 }
 
+type SingleByteXORCipherResults struct {
+	Byte      rune
+	Decrypted string
+	Score     float64
+}
+
+type Context struct {
+	BookPath string
+	S1c4Path string
+}
+
 // Set 1 challenge 3
-func SingleByteXORCipher(hexStr string) (rune, string, error) {
+func (ctx *Context) SingleByteXORCipher(hexStr string) (SingleByteXORCipherResults, error) {
 	results := make(map[rune]float64)
 	outputStrs := make(map[rune]string)
-	densityTable := getEnglishLetterFrequency()
+	densityTable := ctx.getEnglishLetterFrequency()
 
 	var start rune = 0
 	for ; start <= 256; start++ {
@@ -78,13 +89,13 @@ func SingleByteXORCipher(hexStr string) (rune, string, error) {
 		}
 	}
 
-	return currBest, outputStrs[currBest], nil
+	return SingleByteXORCipherResults{currBest, outputStrs[currBest], currMin}, nil
 }
 
-func getEnglishLetterFrequency() map[rune]float64 {
+func (ctx *Context) getEnglishLetterFrequency() map[rune]float64 {
 	frequencyTable := map[rune]int{}
 
-	inputName := "../throughthelookingglass.txt"
+	inputName := ctx.BookPath
 	data, err := os.ReadFile(inputName)
 	if err != nil {
 		log.Panicln("Coudln't read book")
@@ -122,8 +133,45 @@ func scoreEnglish(proposed string, densityTable map[rune]float64) float64 {
 
 	diffScore := 0.0
 	// compare density to english lexicon density
-	for k, v := range densityTable {
-		diffScore += math.Abs(v - density[k])
+	for k, v := range density {
+		score := math.Abs(v - densityTable[k])
+		// If it's not a normal english letter or space, score it a little more skeptically
+		if (k < 'A' || k > 'z') && k != ' ' {
+			score *= 3
+		}
+		diffScore += score
 	}
 	return diffScore
+}
+
+// Set 1 challenge 4
+func (ctx *Context) FindSingleByteEncryption(lines []string) (SingleByteXORCipherResults, error) {
+	results := []SingleByteXORCipherResults{}
+	for _, line := range lines {
+		result, err := ctx.SingleByteXORCipher(line)
+		if err != nil {
+			return SingleByteXORCipherResults{}, err
+		}
+		results = append(results, result)
+	}
+
+	best := SingleByteXORCipherResults{Score: math.MaxFloat64}
+	for _, result := range results {
+		if result.Score < best.Score {
+			best = result
+		}
+	}
+
+	return best, nil
+}
+
+// Set 1 challenge 4
+func ICEEncryption(input string) string {
+	key := []byte{'I', 'C', 'E'}
+	inputBytes := []byte(input)
+	outputBytes := []byte{}
+	for i, b := range inputBytes {
+		outputBytes = append(outputBytes, b^key[i%3])
+	}
+	return hex.EncodeToString(outputBytes)
 }
